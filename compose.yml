@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  pg:
+    container_name: pg
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_USER: ${PGUSER}
+    ports:
+      - "${PGPORT}:${PGPORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local
+
+  app:
+    build: .
+    container_name: app
+    environment:
+      PGUSER: ${PGUSER}
+      PGHOST: pg
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE} 
+      PGPORT: ${PGPORT}
+      APP_PORT: ${APP_PORT}
+    depends_on:
+      pg:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    networks:
+      - local
+
+networks:
+  local:
+    driver: bridge
